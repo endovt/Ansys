@@ -1,0 +1,82 @@
+/CLEAR
+
+/COM,Universidade Federal de Santa Catarina
+/COM,Centro Tecnológico de Joinville
+/COM,EMB5764 Estruturas Navais II
+/COM,Prof. Vitor Takashi Endo, Dr.Eng.
+
+!* Define the design variables
+*ASK,plate_l,lenght (mm),3700   ! x-direction
+*ASK,plate_w,width (mm),880     ! y-direction
+*ASK,plate_t,thickness (mm),20  ! z-direction
+*ASK,load_p,uniform pressure (MPa),0.25
+*ASK,e_size,mesh size (mm),110
+
+/PREP7
+/UNITS,MPa
+!* Geometry
+RECTNG,0,plate_l,0,plate_w,   
+!* Material
+MPTEMP,,,,,,,,  
+MPTEMP,1,0  
+MPDATA,EX,1,,200000     ! elastic modulus
+MPDATA,PRXY,1,,0.3      ! poisson ratio
+MPDATA,DENS,1,,7.8e-9   ! density
+!* Section
+SECT,1,SHELL,,  
+SECDATA,plate_t,1,0.0,3 
+SECOFFSET,MID   
+SECCONTROL,,,, , , ,
+!* Mesh
+ET,1,SHELL281       ! second-order shell
+AESIZE,ALL,e_size   ! global mesh size
+AMESH,ALL           ! generate mesh
+
+!* Pressure (directly on elements)
+SFE,ALL,1,PRES,,load_p,,,   ! apply pressure on all elements
+!* Boundary conditions
+NSLL,S,1                    ! select nodes attached to lines (all)
+D,ALL,ALL,0                 ! fix selected nodes (all dof)
+ALLSEL
+
+*GET,e_count,ELEM,,COUNT ! obtain the number of elements
+/TITLE,Geometry (%plate_l%x%plate_w%x%plate_t%) mm.  %e_count% elements. P=%load_p% MPa.
+
+!* Solution
+/SOLU
+SOLVE
+/POST1
+SET,LAST
+
+!* View 
+/USER,  1   
+/FOC,   1,   465.743304599    ,   399.123168456    ,   188.214214287
+/VIEW,  1,  0.440532970185    , -0.813544009814    ,  0.379574559574
+/ANG,   1,  -54.3391859892  
+/AUTO,1 
+/EFACET,1   
+/ESHAPE,1 ! show thickness
+/REPLOT
+
+!* Results
+
+! Displacement
+*CREATE,plot_u,mac, ! create a file containing a macro
+    /POST1
+    PLNSOL, U,SUM, 0,1.0
+*END
+*ABBR,PLOT_U,plot_u ! create a buttom (Toolbar shorcut)
+
+! Sigma x
+*CREATE,plot_sx,mac, ! create a file containing a macro
+    /POST1
+    PLNSOL, S,X, 0,1.0  
+*END
+*ABBR,PLOT_SX,plot_sx ! create a buttom (Toolbar shorcut)
+
+! Sigma y
+*CREATE,plot_sy,mac, ! create a file containing a macro
+    /POST1
+    PLNSOL, S,y, 0,1.0  
+*END
+*ABBR,PLOT_SY,plot_sy ! create a buttom (Toolbar shorcut)
