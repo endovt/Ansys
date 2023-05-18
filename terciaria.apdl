@@ -10,37 +10,41 @@
 *ASK,plate_w,width (mm),880     ! y-direction
 *ASK,plate_t,thickness (mm),20  ! z-direction
 *ASK,load_p,uniform pressure (MPa),0.25
-*ASK,e_size,mesh size (mm),110
+*ASK,e_size,mesh size (mm),50
 
 /PREP7
 /UNITS,MPa
+
 !* Geometry
-RECTNG,0,plate_l,0,plate_w,   
+RECTNG,0,(plate_l/2),0,(plate_w/2),   
+
 !* Material
 MPTEMP,,,,,,,,  
 MPTEMP,1,0  
 MPDATA,EX,1,,200000     ! elastic modulus
 MPDATA,PRXY,1,,0.3      ! poisson ratio
 MPDATA,DENS,1,,7.8e-9   ! density
+
 !* Section
 SECT,1,SHELL,,  
 SECDATA,plate_t,1,0.0,3 
 SECOFFSET,MID   
 SECCONTROL,,,, , , ,
+
 !* Mesh
 ET,1,SHELL281       ! second-order shell
 AESIZE,ALL,e_size   ! global mesh size
 AMESH,ALL           ! generate mesh
 
-!* Pressure (directly on elements)
-SFE,ALL,1,PRES,,load_p,,,   ! apply pressure on all elements
 !* Boundary conditions
-NSLL,S,1                    ! select nodes attached to lines (all)
-D,ALL,ALL,0                 ! fix selected nodes (all dof)
+DL,1,,SYMM      ! symm
+DL,4,,SYMM      ! symm
+LSEL,S,,,2,3    ! select lines (to be fixed)
+DL,ALL,,ALL,    ! fix selected lines (all dof)
 ALLSEL
 
-*GET,e_count,ELEM,,COUNT ! obtain the number of elements
-/TITLE,Geometry (%plate_l%x%plate_w%x%plate_t%) mm.  %e_count% elements. P=%load_p% MPa.
+!* Pressure (directly on elements)
+SFA,ALL,1,PRESS,load_p      ! apply pressure on all areas
 
 !* Solution
 /SOLU
@@ -56,10 +60,10 @@ SET,LAST
 /AUTO,1 
 /EFACET,1   
 /ESHAPE,1 ! show thickness
-/REPLOT
+/EXPAND,4,POLAR,HALF,,90 ! symmetry expansion
+/REPLOT 
 
 !* Results
-
 ! Displacement
 *CREATE,plot_u,mac, ! create a file containing a macro
     /POST1
@@ -80,3 +84,20 @@ SET,LAST
     PLNSOL, S,y, 0,1.0  
 *END
 *ABBR,PLOT_SY,plot_sy ! create a buttom (Toolbar shorcut)
+
+!* Analysis info
+*GET,e_count,ELEM,,COUNT ! obtain the number of elements
+/TITLE,Geometry (%plate_l%x%plate_w%x%plate_t%) mm.  %e_count% elements. P=%load_p% MPa.
+
+P1_node = node(plate_l/2,0,0) ! get node number based on a coordinate
+*GET,P1_SX,NODE,P1_node,S,X   
+*GET,P1_SY,NODE,P1_node,S,Y
+P2_node = node(0,plate_w/2,0) ! get node number based on a coordinate
+*GET,P2_SX,NODE,P2_node,S,X
+*GET,P2_SY,NODE,P2_node,S,Y
+
+!* Print stress
+/COM,Stress results: Point P1 (top)
+/COM,SX = %P1_SX% MPa, SY = %P1_SY% MPa
+/COM,Stress results: Point P2 (top)
+/COM,SX = %P2_SX% MPa, SY = %P2_SY% MPa
