@@ -1,3 +1,4 @@
+KEYW,PR_SGVOF,1 ! suppress window popup after /CLEAR. KEYW,PR_SGVOF,0 to undo
 /CLEAR
 
 /COM,Universidade Federal de Santa Catarina
