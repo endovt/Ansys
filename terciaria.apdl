@@ -6,11 +6,11 @@
 /COM,Prof. Vitor Takashi Endo, Dr.Eng.
 
 !* Define the design variables
-*ASK,plate_l,lenght (mm),3700   ! x-direction
-*ASK,plate_w,width (mm),880     ! y-direction
-*ASK,plate_t,thickness (mm),20  ! z-direction
-*ASK,load_p,uniform pressure (MPa),0.25
-*ASK,e_size,mesh size (mm),50
+*ASK,plate_l,'plate lenght (mm)',3700   ! x-direction
+*ASK,plate_w,'plate width (mm)',880     ! y-direction
+*ASK,plate_t,'plate thickness (mm)',20  ! z-direction
+*ASK,load_p,'uniform pressure (MPa)',0.25
+*ASK,e_size,'mesh size (mm)',50
 
 /PREP7
 /UNITS,MPa
@@ -44,7 +44,7 @@ DL,ALL,,ALL,    ! fix selected lines (all dof)
 ALLSEL
 
 !* Pressure (directly on elements)
-SFA,ALL,1,PRESS,load_p      ! apply pressure on all areas
+SFA,ALL,1,PRESS,load_p  ! apply pressure on all areas
 
 !* Solution
 /SOLU
@@ -59,8 +59,8 @@ SET,LAST
 /ANG,   1,  -54.3391859892  
 /AUTO,1 
 /EFACET,1   
-/ESHAPE,1 ! show thickness
-/EXPAND,4,POLAR,HALF,,90 ! symmetry expansion
+/ESHAPE,1                   ! show thickness
+/EXPAND,4,POLAR,HALF,,90    ! symmetry expansion
 /REPLOT 
 
 !* Results
