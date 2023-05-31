@@ -1,0 +1,182 @@
+KEYW,PR_SGVOF,1         ! suppress window popup after /clear, KEYW,PR_SGVOF,0 to undo
+/UIS,MSGPOP,3           ! message dialog box: only errors
+/CLEAR
+
+/TITLE,Ship hull analysis using beam elements (beta)
+/UNITS,MKS ! a reminder regarding the units
+
+! Main assumptions: 
+! First line of the table: header
+! Column 1: position x (m)
+! Column 2: q(x) (N/m)
+! Constant interval between points
+
+! Main objectives:
+! Obtain the bending moment diagram M(x) (Nm)
+! Obtain the shear force diagram V(x) (N)
+
+! Strategy:
+! Read an external file containing the load data: q(x)
+! Apply line load using SFBEAM (element loop)
+! Evaluate the results
+
+! --------------------------
+/COM, Define variables (hypothetical parameters)
+*SET,width,10           ! Beam width (m)
+*SET,height,10          ! Beam height (m) 
+*SET,elastic_mod,200e9  ! Elastic modulus (Pa)
+*SET,density,7.8e3      ! Density (kg/m3)
+! --------------------------
+/COM, Read external file containing the load information
+*ASK,filename,'the name of the txt file containing: pos x [m] and q(x) [N/m]','table'
+/INQUIRE,exist,EXIST,filename,txt           ! check whether the file exists (1) or not (0)
+*IF,exist,EQ,0,THEN
+    /EXIT ! or /EOF ?
+*ENDIF
+/INQUIRE,file_lines,LINES,filename,txt      ! check the number of lines
+/COM, The file contains %file_lines% lines, including the header.
+*SET,file_lines_skip,1                      ! skip lines (number of lines containing the header)
+*SET,tab_lines,(file_lines-file_lines_skip) ! number of lines (data) 
+/COM, The table contains %tab_lines% lines.
+! Create table (to organize the loading condition)
+*DIM,carga,TABLE,tab_lines,1,,              ! create table
+*TREAD,carga,filename,txt,,file_lines_skip  ! read text file (check working directory), skip header
+! --------------------------
+! Create array (to calculate additional information)
+*DIM,pos,ARRAY,tab_lines,1,1                ! create array
+*VFUN,pos(1,1),COPY,carga(1,0)              ! copy from table (column 1)
+*SET,kp1,pos(1,1)                           ! x-coordinate of point 1
+*SET,kp2,pos(tab_lines,1)                   ! x-coordinate of point 2
+*SET,el_size,( pos(2,1)-pos(1,1) )          ! element size (m)
+/COM, The initial position is %pos(1,1)% m, the end position is %pos(tab_lines,1)% m.
+/COM, Thus, the beam length is %pos(tab_lines,1)-pos(1,1)% m.
+/COM, The element length is %pos(2,1)-pos(1,1)% m.
+! --------------------------
+/PREP7
+! Geometry
+K,1,kp1,0,0         ! point#1  
+K,2,kp2,0,0         ! point#2 
+L,1,2               ! line: point#1 and point#2
+! Material properties
+MPTEMP,,,,,,,,  
+MPTEMP,1,0  
+MPDATA,EX,1,,elastic_mod 
+MPDATA,PRXY,1,,0.3  
+MPDATA,DENS,1,,density  
+! Section
+SECTYPE,1,BEAM,RECT,,0   
+SECOFFSET, CENT 
+SECDATA,height,width,0,0,0,0,0,0,0,0,0,0 
+! Element
+ET,1,BEAM189 ! second-order beam element
+LESIZE,ALL,el_size
+LMESH,ALL
+/SOLU
+ANTYPE,0
+! BC
+! D,1,UX,0, , , ,UY,UZ,ROTX,ROTY, ,  
+D,ALL,ROTX,0
+! Load
+*GET,emax,ELEM,0,count              ! emax: number of elements
+*DO,e,1,emax,1                      ! evaluate each beam element
+    *SET,no_i,e*1                   ! left node
+    *SET,no_j,e*1+1                 ! right node
+    *SET,val_i,carga(no_i,1)        ! value of q(x) on left node (convert to N/m)
+    *SET,val_j,carga(no_j,1)        ! value of q(x) on right node (convert to N/m)
+    SFBEAM,e,2,PRES,val_i,val_j     ! apply load based on the extreme values
+*ENDDO
+! --------------------------
+! to improve convergence
+WSPRINGS    ! weak springs
+IRLF,1      ! inertial relief
+! --------------------------
+ALLSEL
+SOLVE
+/POST1
+SET,LAST
+/ESHAPE,1 ! render beam profile
+! --------------------------
+ESEL,S,TYPE,,1 ! select beam elements
+! obtain shear force diagram
+ETABLE, ,SMISC,6    ! node i   
+ETABLE, ,SMISC,19   ! node j
+! obtain beding moment diagram
+ETABLE, ,SMISC,16  ! node j
+ETABLE, ,SMISC,3   ! node i 
+! --------------------------
+! Create macros for easily viewing results
+*CREATE,usum,mac, ! create a file containing a macro
+    /POST1
+    /ANNO,DELE  
+    ERASE
+    PLNSOL, U,SUM, 0,1.0
+*END
+*ABBR,USUM,usum ! create a buttom (Toolbar shorcut)
+
+*CREATE,sx,mac, ! create a file containing a macro
+    /POST1
+    /ANNO,DELE  
+    ERASE
+    PLNSOL, S,X, 0,1.0 ! plot sigma_x stress
+*END
+*ABBR,SX,sx ! create a buttom (Toolbar shorcut)
+
+*CREATE,seqv,mac, ! create a file containing a macro
+    /POST1
+    /ANNO,DELE  
+    ERASE
+    PLNSOL, S,EQV, 0,1.0 ! plot sigma_x stress
+*END
+*ABBR,SEQV,seqv ! create a buttom (Toolbar shorcut)
+
+*CREATE,moment,mac, ! create a file containing a macro
+    /POST1
+    /ANNO,DELE  
+    ERASE
+    /AN3D,TEXT,0,-30,0,Bending moment diagram M(x) [Nm]
+    PLLS,SMIS3,SMIS16,1,0,0 ! Bending moment diagram
+    /VIEW,1,,,1 
+    /ANG,1  
+    /AUTO,1 
+    /REP,FAST    
+*END
+*ABBR,MOMENT,moment ! create a buttom (Toolbar shorcut)
+
+*CREATE,shear,mac, ! create a file containing a macro
+    /POST1
+    /ANNO,DELE  
+    ERASE
+    /AN3D,TEXT,0,-30,0,Shear force diagram V(x) [N]
+    PLLS,SMIS6,SMIS19,1,0,0 ! Shear force diagram
+    /VIEW,1,,,1 
+    /ANG,1  
+    /AUTO,1 
+    /REP,FAST  
+*END
+*ABBR,SHEAR,shear ! create a buttom (Toolbar shorcut)
+
+*CREATE,qx,mac, ! create a file containing a macro
+    /COM,Figure showing the line load
+    /COM,Positive values:
+    /COM,Negative values:
+    /AXLAB,X,Position x [m]             ! column 0: position 
+    /AXLAB,Y,Curva de carga q(x) [N/m] ! column 1: q
+    /XRANGE,kp1,kp2                     ! x-axis: min=point#1 max=point#2
+    *VPLOT,carga(1,0),carga(1,1)        ! column 1 vs column 0
+*END
+*ABBR,QX,qx ! create a buttom (Toolbar shorcut)
+
+!todo moment of inertia calculation
+*CREATE,i_calc,mac, ! create a file containing a macro
+    /POST1
+    SMAX,m_max,SMIS3,SMIS16,1,1,
+    /COM,Bending moment: the maximum value is %m_max% Nm.
+    *ASK,s_targ,'the stress target',120
+    /COM, identify the section parameters (moment of inertia)
+*END
+*ABBR,I_CALC,i_calc ! create a buttom (Toolbar shorcut)
+
+!todo Check the reaction force of weak springs.
+!todo Export results (bending moment and shear force) in a text file
+
+

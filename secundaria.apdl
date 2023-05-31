@@ -1,0 +1,161 @@
+KEYW,PR_SGVOF,1         ! suppress window popup after /clear, KEYW,PR_SGVOF,0 to undo
+/UIS,MSGPOP,3           ! message dialog box: only errors
+/CLEAR
+
+! APDL script: Rectangular plate (shell) with reinforcement (beam)
+
+!* Define the design variables
+MULTIPRO,'START',9 ! number of design variables
+    ! plate dimensions (shell)
+    *CSET,1,3,plate_l,'Enter plate length (mm)',3700    ! x-direction
+    *CSET,4,6,plate_w,'Enter plate width (mm)',880      ! y-direction
+    *CSET,7,9,plate_t,'Enter plate thickness (mm)',20   ! z-direction
+    ! reinforcement dimensions: 'T' section (beam)
+    *CSET,10,12,flange_w1,'Enter flange width (mm)',150
+    *CSET,13,15,flange_t1,'Enter flange thickness (mm)',18
+    *CSET,16,18,web_w2,'Enter web height (mm)',400 
+    *CSET,19,21,web_t2,'Enter web thickness (mm)',12 
+    ! loading condition
+    *CSET,22,24,plate_pres,'Enter uniform pressure (MPa)',0.25  ! pressure on the plate
+    ! mesh parameter
+    *CSET,25,27,mesh_size,'Enter global mesh size (mm)',50      ! mesh size
+    ! display message
+    *CSET,61,62,'Define the design variables',''                ! message
+    *CSET,63,64,'',''                                           ! message
+MULTIPRO,'END'
+
+/COM,MULTIPRO Buttom status: %_BUTTON%.
+/COM, _BUTTON = 0 indicates that the OK button was pressed.
+/COM, _BUTTON = 1 indicates that the Cancel button was pressed.
+
+*IF,_BUTTON,EQ,1,THEN
+    /EXIT ! or /EOF ?
+*ENDIF
+
+/PREP7
+/TITLE, Geom:(%plate_l%x%plate_w%x%plate_t%) mm, Mat:steel, Pres:%plate_pres% MPa
+/UNITS,MPa
+!* Geometry
+/PNUM,KP,1   ! show keypoint numbering
+/PNUM,LINE,1 ! show line numbering
+/PNUM,AREA,1 ! show area numbering
+K, ,0,0,0,  ! create keypoint (x,y,z)
+K, ,plate_l,0,0,  
+K, ,0,plate_w/2,0,  
+K, ,plate_l,plate_w/2,0,  
+K, ,0,plate_w,0,  
+K, ,plate_l,plate_w,0,  
+L,1,2 ! create line (kp1 to kp2)
+*REPEAT,3,2,2
+ASKIN,1,2 ! create area (l1 to l2)
+*REPEAT,2,1,1
+!* Material
+MPTEMP,,,,,,,,  
+MPTEMP,1,0  
+MPDATA,EX,1,,200000 ! elastic modulus
+MPDATA,PRXY,1,,0.3 ! poisson ratio
+MPDATA,DENS,1,,7.8e-9 ! density
+!* Section
+SECT,1,SHELL,,  
+SECDATA,plate_t,1,0.0,3 ! shell thickness
+SECOFFSET,BOT ! section offset
+SECCONTROL,,,, , , ,
+!* Mesh
+ET,1,SHELL281 ! second-order shell
+AESIZE,ALL,mesh_size ! define mesh size
+AMESH,ALL ! generate shell elements
+!* Reinforcement
+ET,2,BEAM189 ! second-order beam
+TYPE,2  
+SECTYPE,2, BEAM,T,,1                    ! 'T' section
+SECOFFSET,USER,0,web_w2-flange_t1/2    ! section offset
+SECDATA,flange_w1,web_w2,flange_t1,web_t2,0,0,0,0,0,0,0,0
+SECN,2
+LSEL,S, , ,       2 
+LMESH,ALL ! generate beam elements
+!* Pressure (directly on elements)
+ASEL,ALL
+ESLA,S ! select elements based on the selected areas
+SFE,ALL,1,PRES, ,-plate_pres, , , ! apply pressure on all areas
+!* Boundary conditions (directly on nodes)
+SELTOL,1.0E-6 ! tolerance for subsequent select operations
+NSEL,S,LOC,X,0 ! select nodes located on x=0
+NSEL,A,LOC,X,plate_l ! add to selection
+D,ALL,ALL,0 ! fix selected nodes (all dof)
+NSEL,S,LOC,Y,0 
+NSEL,A,LOC,Y,plate_w 
+D,ALL,UY,0, , , ,ROTX,ROTZ, , , ,  ! symmetry
+ALLSEL
+!* View 
+/USER,  1   
+/FOC,   1,   465.743304599    ,   399.123168456    ,   188.214214287
+/VIEW,  1,  0.440532970185    , -0.813544009814    ,  0.379574559574
+/ANG,   1,  -54.3391859892  
+/AUTO,1 
+/EFACET,1   
+/ESHAPE,1 ! render element section
+EPLOT
+/REPLOT  
+!* Component manager
+ESEL,S,TYPE,,1  ! select shell elements
+CM,plate,ELEM ! 
+ESEL,S,TYPE,,2  ! select beam elements
+CM,reinforcement,ELEM ! 
+ALLSEL
+!* Macro and Toolbar
+! Element selection (shell)
+*CREATE,sel_shell,mac, ! create a file containing a macro
+    ESEL,S,TYPE,,1  ! select shell elements
+    /REPLOT,Label
+*END
+*ABBR,SEL_SHELL,sel_shell ! create a buttom (Toolbar shorcut)
+! Element selection (beam)
+*CREATE,sel_beam,mac, ! create a file containing a macro
+    ESEL,S,TYPE,,2  ! select beam elements
+    /REPLOT,Label
+*END
+*ABBR,SEL_BEAM,sel_beam ! create a buttom (Toolbar shorcut)
+! Element selection (all)
+*CREATE,sel_all,mac, ! create a file containing a macro
+    ALLSEL  ! select all elements
+    /REPLOT,Label
+*END
+*ABBR,SEL_ALL,sel_all ! create a buttom (Toolbar shorcut)
+! Displacement
+*CREATE,plot_u,mac, ! create a file containing a macro
+    /POST1
+    PLNSOL, U,SUM, 0,1.0
+*END
+*ABBR,PLOT_U,plot_u ! create a buttom (Toolbar shorcut)
+! Sigma x
+*CREATE,plot_sx,mac, ! create a file containing a macro
+    /POST1
+    PLNSOL, S,X, 0,1.0  
+*END
+*ABBR,PLOT_SX,plot_sx ! create a buttom (Toolbar shorcut)
+! Sigma y
+*CREATE,plot_sy,mac, ! create a file containing a macro
+    /POST1
+    PLNSOL, S,Y, 0,1.0  
+*END
+*ABBR,PLOT_SY,plot_sy ! create a buttom (Toolbar shorcut)
+! Sigma Von Mises
+*CREATE,plot_seqv,mac, ! create a file containing a macro
+    /POST1
+    PLNSOL, S,EQV, 0,1.0  
+*END
+*ABBR,PLOT_SEQV,plot_seqv ! create a buttom (Toolbar shorcut)
+! Expand (mirror and pattern)
+*CREATE,Plot_expand,mac, ! create a file containing a macro
+    /POST1
+    *ASK,rep_y,'No. of repetitions (y-direction)',4
+    *ASK,rep_x,'No. of repetitions (x-direction)',2
+    /EXPAND,rep_y,RECT,FULL,,plate_w,,rep_x,RECT,FULL,plate_l ,,, ,RECT,FULL,,,, 
+    /REPLOT
+    /AUTO,1 
+*END
+*ABBR,PLOT_EXPAND,Plot_expand ! create a buttom (Toolbar shorcut)
+!* Solution
+/SOLU
+SOLVE
+/POST1
