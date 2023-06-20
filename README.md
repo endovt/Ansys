@@ -48,7 +48,6 @@ Editores de planilhas, como o Excel, normalmente permitem exportar arquivos de t
 O arquivo gerado não deve conter linhas em branco.
 Salienta-se que o ponto é utilizado como separador decimal.
 A seguir, temos um exemplo:
-
 ```
 x-pos (m) q (N/m)
 0 -492.752376
@@ -75,7 +74,6 @@ Com a leitura do arquivo de entrada, o script solicitá os parâmetros da simula
 
 Obs.: A versão corrente do script emprega o comando MULTIPRO, permitindo a inclusão de todos os parâmetros numa única janela.
 O referido comando não funciona adequadamente se o script for executado diretamente do UIDL (por exemplo, se as instruções forem coladas no Command Prompt do Ansys); portanto, para o devido funcionamento do script, é necessário seguir as instruções indicadas neste documento.
-
 
 # Code description, according to ChatGPT
 
