@@ -2,7 +2,7 @@ KEYW,PR_SGVOF,1         ! suppress window popup after /clear, KEYW,PR_SGVOF,0 to
 /UIS,MSGPOP,3           ! message dialog box: only errors
 /CLEAR
 
-/TITLE,Ship hull analysis using beam elements (beta)
+/TITLE,Ship hull analysis using beam elements
 /UNITS,MKS ! a reminder regarding the units
 
 ! Main assumptions: 
@@ -166,17 +166,6 @@ ETABLE, ,SMISC,3   ! node i
 *END
 *ABBR,QX,qx ! create a buttom (Toolbar shorcut)
 
-!todo moment of inertia calculation
-*CREATE,i_calc,mac, ! create a file containing a macro
-    /POST1
-    SMAX,m_max,SMIS3,SMIS16,1,1,
-    /COM,Bending moment: the maximum value is %m_max% Nm.
-    *ASK,s_targ,'the stress target',120
-    /COM, identify the section parameters (moment of inertia)
-*END
-*ABBR,I_CALC,i_calc ! create a buttom (Toolbar shorcut)
-
-!todo Check the reaction force of weak springs.
-!todo Export results (bending moment and shear force) in a text file
-
-
+! todo: check the reaction force of weak springs.
+! todo: check the applied acceleration (inertia relief)
+! todo: export results (bending moment and shear force) in a text file

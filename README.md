@@ -41,10 +41,11 @@ Após a instalação do programa, seguir os seguintes passos:
 
 ## Estrutura Primária 
 
-Requer arquivo com extensão .txt com a curva de cargas (q) ao longo do comprimento da embarcação (x-pos), sendo esperado que a embarcação esteja devidamente em equilíbrio.
-A primeira linha do arquivo é o cabeçalho, e será desconsiderado durante a importação.
-Os dados se iniciam efetivamente a partir da segunda linha; é esperado que a tabela siga o formato de "tabela separada por espaços".
+Este script requer um arquivo com extensão .txt com a curva de cargas (q) ao longo do comprimento da embarcação (x-pos), sendo esperado que a embarcação esteja devidamente em equilíbrio.
+A primeira linha do arquivo é o cabeçalho, que será desconsiderada durante a importação.
+Os dados se iniciam efetivamente a partir da segunda linha; é esperado que a tabela siga o formato de "separado por tabulações".
 Editores de planilhas, como o Excel, normalmente permitem exportar arquivos de texto com este formato.
+O arquivo gerado não deve conter linhas em branco.
 Salienta-se que o ponto é utilizado como separador decimal.
 A seguir, temos um exemplo:
 
@@ -74,6 +75,7 @@ Com a leitura do arquivo de entrada, o script solicitá os parâmetros da simula
 
 Obs.: A versão corrente do script emprega o comando MULTIPRO, permitindo a inclusão de todos os parâmetros numa única janela.
 O referido comando não funciona adequadamente se o script for executado diretamente do UIDL (por exemplo, se as instruções forem coladas no Command Prompt do Ansys); portanto, para o devido funcionamento do script, é necessário seguir as instruções indicadas neste documento.
+
 
 # Code description, according to ChatGPT
 

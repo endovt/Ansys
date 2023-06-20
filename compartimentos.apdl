@@ -109,17 +109,32 @@ FINISH
 /POST1  
 /EFACET,1   
 
-! Maximum stress calculation (bottom, origin)
-node_0 = node(0,0,0)
-NSEL,S,,,node_0 
-ESLN,S  
-PLNSOL, S,X, 0,1.0  
-*GET,max_stress,PLNSOL,0,MAX
-/TITLE,%(2*comp_n)% comp. Load case %load_case%. SX_max (0,0,0) = %max_stress% MPa.
-
 ! Expand symmetry
 /EXPAND,2,RECT,HALF,0.00001,,,2,RECT,HALF,,0,/EXPAND,rep_y,RECT,FULL,,plate_w, ,RECT,FULL,,,,   
 
 ! Displacement plot
-ALLSEL
 PLNSOL, U,SUM, 0,1.0
+
+*CREATE,usum,mac, ! create a file containing a macro
+    /POST1
+    PLNSOL, U,SUM, 0,1.0
+*END
+*ABBR,USUM,usum ! create a buttom (Toolbar shorcut)
+
+*CREATE,sx,mac, ! create a file containing a macro
+    /POST1
+    ! Maximum stress calculation (bottom, origin)
+    node_0 = node(0,0,0)
+    NSEL,S,,,node_0 
+    ESLN,S  
+    PLNSOL, S,X, 0,1.0  
+    *GET,max_stress,PLNSOL,0,MAX
+    /TITLE,%(2*comp_n)% comp. Load case %load_case%. SX_max (0,0,0) = %max_stress% MPa.
+    /AN3D,ANUM,0,   105, -1799.1    ,  952.55    ,  1247.3  
+    /AN3D,ARR2,  1.000, -345.450    ,  481.934    , 0.909495E-12,  0.00000    ,  0.00000    ,  0.00000  
+    /AN3D,TEXT, -1799.1    ,  952.55    ,  1247.3    ,SX=%max_stress% MPa 
+    ! Plot SX
+    ALLSEL
+    PLNSOL, S,X, 0,1.0 ! plot sigma_x stress
+*END
+*ABBR,SX,sx ! create a buttom (Toolbar shorcut)
