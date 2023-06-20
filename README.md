@@ -43,7 +43,7 @@ Após a instalação do programa, seguir os seguintes passos:
 
 Este script requer um arquivo com extensão .txt com a curva de cargas (q) ao longo do comprimento da embarcação (x-pos), sendo esperado que a embarcação esteja devidamente em equilíbrio.
 A primeira linha do arquivo é o cabeçalho, que será desconsiderada durante a importação.
-Os dados se iniciam efetivamente a partir da segunda linha; é esperado que a tabela siga o formato de "separado por tabulações".
+Os dados se iniciam efetivamente a partir da segunda linha; é esperado que a tabela siga o formato "separado por tabulações".
 Editores de planilhas, como o Excel, normalmente permitem exportar arquivos de texto com este formato.
 O arquivo gerado não deve conter linhas em branco.
 Salienta-se que o ponto é utilizado como separador decimal.
