@@ -1,0 +1,132 @@
+KEYW,PR_SGVOF,1         ! suppress window popup after /clear, KEYW,PR_SGVOF,0 to undo
+/UIS,MSGPOP,3           ! message dialog box: only errors
+/CLEAR
+
+/TITLE, Modal analysis
+
+!* Define the design variables
+MULTIPRO,'START',10 ! number of design variables
+    ! plate dimensions (shell)
+    *CSET,1,3,plate_l,'Enter plate length (mm)',3700 
+    *CSET,4,6,plate_w,'Enter plate width (mm)',880
+    *CSET,7,9,plate_t,'Enter plate thickness (mm)',20
+    *CSET,10,12,web_h,'Enter web heigth (mm)',400 
+    *CSET,13,15,web_t,'Enter web thickness (mm)',12 
+    *CSET,16,18,flange_w,'Enter flange width (mm)',150
+    *CSET,19,21,flange_t,'Enter flange thickness (mm)',18
+    *CSET,22,24,mat_e,'Enter elastic modulus (MPa)',200000 
+    *CSET,25,27,mat_rho,'Enter density (t/mm3)',7.8e-9 
+    *CSET,28,30,mesh_size,'Enter global mesh size (mm)',100 
+    ! display message
+    *CSET,61,62,'Define the design variables',''                ! message
+    *CSET,63,64,'',''                                           ! message
+MULTIPRO,'END'
+
+*IF,_BUTTON,EQ,1,THEN
+    /EXIT ! or /EOF ?
+*ENDIF
+
+*SET,vibr_mode,25 ! number of vibration modes
+
+/PREP7
+! face frontal do corte
+! reforcador
+K,,0,0,0,
+K,,0,web_h,0
+K,,-flange_w/2,web_h,0
+K,,+flange_w/2,web_h,0
+L,1,2
+L,2,3
+L,2,4
+! shell
+K,,-plate_w,0,0,
+K,,plate_w,0,0,
+L,1,5
+L,1,6
+! copiar para fundo
+LGEN,2,ALL, , , , ,-plate_l, ,1
+ASKIN,1,6
+*REPEAT,5,1,1
+! fix normal direction
+ASEL,S, , ,5,   
+ASEL,A, , ,3,   
+AREVERSE,ALL,0  
+ALLSEL
+! element type
+ET,1,SHELL281 
+AESIZE,ALL,mesh_size
+! material  
+MPTEMP,,,,,,,,  
+MPTEMP,1,0  
+MPDATA,DENS,1,,7.8e-9   
+MPTEMP,,,,,,,,  
+MPTEMP,1,0  
+MPDATA,EX,1,,700000 
+MPDATA,PRXY,1,,0.3  
+! section (plate)
+SECT,1,SHELL,,  
+SECDATA,plate_t,1,0.0,3 
+SECOFFSET,BOT   
+SECCONTROL,,,, , , ,
+! section (web)
+SECT,2,SHELL,,  
+SECDATA,web_t,1,0,3
+SECOFFSET,MID
+SECCONTROL,0,0,0, 0, 1, 1, 1
+! section (flange)
+SECT,3,SHELL,,  
+SECDATA,flange_t,1,0,3
+SECOFFSET,TOP
+SECCONTROL,0,0,0, 0, 1, 1, 1
+! mesh
+SECN,1
+ASEL,S, , ,4,5,1,
+AMESH,ALL   
+
+ASEL,S, , ,1,   
+SECN,2
+AMESH,ALL
+
+SECN,3
+ASEL,S, , ,2,3,1,
+AMESH,ALL   
+
+ANTYPE,2
+MODOPT,LANB,vibr_mode  
+EQSLV,SPAR  
+MXPAND,0, , ,0  
+LUMPM,0 
+PSTRES,0
+
+!* boundary condition
+NSEL,S,LOC,Z,0
+NSEL,A,LOC,Z,-plate_l  
+NSEL,A,LOC,X,-plate_w
+NSEL,A,LOC,X,plate_w
+D,ALL,ALL
+
+ALLSEL
+/SOLU
+SOLVE
+FINISH  
+
+/EFACET,1   
+/ESHAPE,1
+
+/POST1
+SET,FIRST
+PLNSOL, U,SUM, 0,1.0
+
+*CREATE,prev_set,mac, ! create a file containing a macro
+    /POST1
+    SET,PREVIOUS
+    PLNSOL, U,SUM, 0,1.0
+*END
+*ABBR,PREV_SET,prev_set ! create a buttom (Toolbar shorcut)
+
+*CREATE,next_set,mac, ! create a file containing a macro
+    /POST1
+    SET,NEXT
+    PLNSOL, U,SUM, 0,1.0
+*END
+*ABBR,NEXT_SET,next_set ! create a buttom (Toolbar shorcut)
