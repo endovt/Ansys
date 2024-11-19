@@ -5,11 +5,11 @@ KEYW,PR_SGVOF,1         ! suppress window popup after /clear, KEYW,PR_SGVOF,0 to
 /TITLE,Ship hull analysis using beam elements
 /UNITS,MKS ! a reminder regarding the units
 
-! Main assumptions: 
+! Main assumptions of the input data: 
 ! First line of the table: header
 ! Column 1: position x (m)
 ! Column 2: q(x) (N/m)
-! Constant interval between points
+! Rows: constant interval (1 m)
 
 ! Main objectives:
 ! Obtain the bending moment diagram M(x) (Nm)
@@ -29,6 +29,7 @@ KEYW,PR_SGVOF,1         ! suppress window popup after /clear, KEYW,PR_SGVOF,0 to
 ! --------------------------
 /COM, Read external file containing the load information
 *ASK,filename,'the name of the txt file containing: pos x [m] and q(x) [N/m]','table'
+!! use a short name (5 letters, for instance), otherwise it will not work properly
 /INQUIRE,exist,EXIST,filename,txt           ! check whether the file exists (1) or not (0)
 *IF,exist,EQ,0,THEN
     /EXIT ! or /EOF ?
@@ -105,6 +106,18 @@ ETABLE, ,SMISC,16  ! node j
 ETABLE, ,SMISC,3   ! node i 
 ! --------------------------
 ! Create macros for easily viewing results
+
+*CREATE,qx,mac, ! create a file containing a macro
+    /COM,Figure showing the line load
+    /COM,Positive values:
+    /COM,Negative values:
+    /AXLAB,X,Position x [m]             ! column 0: position 
+    /AXLAB,Y,Load q(x) [N/m] ! column 1: q
+    /XRANGE,kp1,kp2                     ! x-axis: min=point#1 max=point#2
+    *VPLOT,carga(1,0),carga(1,1)        ! column 1 vs column 0
+*END
+*ABBR,QX,qx ! create a buttom (Toolbar shorcut)
+
 *CREATE,usum,mac, ! create a file containing a macro
     /POST1
     /ANNO,DELE  
@@ -155,17 +168,59 @@ ETABLE, ,SMISC,3   ! node i
 *END
 *ABBR,SHEAR,shear ! create a buttom (Toolbar shorcut)
 
-*CREATE,qx,mac, ! create a file containing a macro
-    /COM,Figure showing the line load
-    /COM,Positive values:
-    /COM,Negative values:
-    /AXLAB,X,Position x [m]             ! column 0: position 
-    /AXLAB,Y,Curva de carga q(x) [N/m] ! column 1: q
-    /XRANGE,kp1,kp2                     ! x-axis: min=point#1 max=point#2
-    *VPLOT,carga(1,0),carga(1,1)        ! column 1 vs column 0
+
+! Exporting results (bending moment and shear force) in a text file
+
+! Commands to obtain the arrays containing the section forces and moments
+! /POST1
+! PRETAB,SMIS6      ! Shear force for each element (node i)
+! PRETAB,SMIS19     ! Shear force for each element (node j)
+! PRETAB,SMIS3      ! Bending moment for each element (node i) 
+! PRETAB,SMIS16     ! Bending moment for each element (node j)
+! Alternatively, we can find using GUI:
+! General Postproc, List, Results, Elem table data, SMIS3  SMIS6
+
+! Defining a table with the internal force
+
+! obtain shear force diagram
+ETABLE,vy_i,SMISC,6     ! node i   
+ETABLE,vy_j,SMISC,19    ! node j
+! obtain beding moment diagram
+ETABLE,mz_j,SMISC,16    ! node j
+ETABLE,mz_i,SMISC,3     ! node i 
+
+*GET,num_elem_,ELEM,0,COUN ! element count
+*DIM,diagrama, ARRAY, num_elem_, 3 ! create an array: rows: number of elements, coluns: 3
+
+*VGET,diagrama(1,1),ELEM,,ELIST         ! column 1: element number
+*VGET,diagrama(1,2),ELEM,1,ETAB,vy_j    ! column 2: shear force
+*VGET,diagrama(1,3),ELEM,1,ETAB,mz_j    ! column 3: bending moment
+
+*MWRITE, diagrama, diagrama, txt ! this command only works usin /input
+(2(F8.1,),8(E10.3,),8(E10.3,)) 
+!todo: fix format
+
+! (2(F8.0,', '),8(E10.3,', '),8(E10.3,', ')) 
+
+*CREATE,diagram,mac, ! create a file containing a macro
+
+    ! Pop up window
+    /INQUIRE,workdir,DIRECTORY ! check the working directory
+    *MSG,UI,workdir(1)
+    Please check the Output Command Window to see the contents of %C\diagrama.txt.
+
+    /COM,Table with section forces and moments
+    /COM,Column 1: Position (m)
+    /COM,Column 2: shear force (N)
+    /COM,Column 3: bending moment (Nm)
+    *LIST,diagrama,txt
+
 *END
-*ABBR,QX,qx ! create a buttom (Toolbar shorcut)
+*ABBR,EXPORT_DIAGRAM,diagram ! create a buttom (Toolbar shorcut)
 
 ! todo: check the reaction force of weak springs.
 ! todo: check the applied acceleration (inertia relief)
-! todo: export results (bending moment and shear force) in a text file
+
+! https://web.stanford.edu/class/me200c/tutorial_77/17_format.html
+! referência sobre como exportar as informações num arquivo de texto.
+! https://www.eng-tips.com/viewthread.cfm?qid=448125
